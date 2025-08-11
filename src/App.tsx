@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { RotateCcw, Save, Code2 } from "lucide-react";
+import { Code2 } from "lucide-react";
 import {
   initializeAST,
   updateElement,
@@ -164,16 +163,6 @@ export default function App() {
         <div className="p-4 border-b bg-card h-[70px]">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Visual Editor</h1>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <RotateCcw className="w-4 h-4 mr-1" />
-                Reset
-              </Button>
-              <Button size="sm">
-                <Save className="w-4 h-4 mr-1" />
-                Save
-              </Button>
-            </div>
           </div>
         </div>
 
