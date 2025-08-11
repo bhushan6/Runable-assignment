@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+    <script>
+      try {
+        const React = window.React;
+        const ReactDOM = window.ReactDOM;
+        const code = "Virtual Module";
+
+        window.addEventListener("message", (ev) => {
+          const { type, uid } = ev.data || {};
+
+          if (type === "get-style" && uid) {
+            const el = document.querySelector(`[data-uid="${uid}"]`);
+            if (el) {
+              const styles = window.getComputedStyle(el);
+
+              // pick only the props your editor cares about
+              const extracted = {
+                color: styles.color,
+                backgroundColor: styles.backgroundColor,
+                fontSize: styles.fontSize,
+                fontWeight: styles.fontWeight,
+                textAlign: styles.textAlign,
+              };
+              parent.postMessage(
+                { type: "style-data", uid, styles: extracted },
+                "*"
+              );
+            }
+          }
+        });
+
+        const App = () => {
+          React.useEffect(() => {
+            enableElementInspector((node) => {
+              while (node && node !== document) {
+                const uid = node.getAttribute && node.getAttribute("data-uid");
+                if (uid) {
+                  parent.postMessage({ type: "select", uid }, "*");
+                  return;
+                }
+                node = node.parentNode;
+              }
+            });
+          }, []);
+          return code;
+        };
+        const root = React.createElement(App);
+        const rootElement = document.getElementById("root");
+        ReactDOM.createRoot(rootElement).render(root);
+
+        let prevSelectedElementUId = null;
+
+        function enableElementInspector(onSelect) {
+          let hoverOverlay = createOverlay("#4A90E2", "dashed");
+          let selectOverlay = createOverlay("red", "solid");
+
+          //find previously selected element from uid
+          let selectedElement =
+            document.querySelector(`[data-uid="${prevSelectedElementUId}"]`) ||
+            null;
+
+          if (selectedElement)
+            updateOverlayPosition(selectOverlay, selectedElement);
+
+          function createOverlay(color, style) {
+            const overlay = document.createElement("div");
+            overlay.style.position = "absolute";
+            overlay.style.border = "2px solid blue";
+            overlay.style.pointerEvents = "none";
+            overlay.style.zIndex = "999999";
+            overlay.style.boxSizing = "border-box";
+            overlay.style.display = "none";
+            document.body.appendChild(overlay);
+            return overlay;
+          }
+
+          function updateOverlayPosition(overlay, element) {
+            if (
+              !element ||
+              element === document.body ||
+              element === document.documentElement
+            ) {
+              overlay.style.display = "none";
+              return;
+            }
+            const rect = element.getBoundingClientRect();
+
+            overlay.style.display = "block";
+            overlay.style.borderColor =
+              element === selectedElement ? "red" : "#4A90E2";
+            const padding = 4;
+            overlay.style.left = `${rect.left + window.scrollX - padding}px`;
+            overlay.style.top = `${rect.top + window.scrollY - padding}px`;
+            overlay.style.width = `${rect.width + padding * 2}px`;
+            overlay.style.height = `${rect.height + padding * 2}px`;
+          }
+
+          document.addEventListener("mousemove", (e) => {
+            if (selectedElement && e.target === selectedElement) return; // Don't show hover on selected element
+            if (e.target === rootElement) {
+              return;
+            }
+            document.body.style.cursor = "pointer";
+            updateOverlayPosition(hoverOverlay, e.target);
+          });
+
+          document.addEventListener(
+            "click",
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+
+              if (e.target === rootElement) return;
+
+              selectedElement = e.target;
+              updateOverlayPosition(selectOverlay, selectedElement);
+              updateOverlayPosition(hoverOverlay, null); // Hide hover when selected
+              onSelect?.(selectedElement);
+            },
+            true
+          );
+        }
+      } catch (err) {
+        parent.postMessage({ type: "error", message: String(err) }, "*");
+      }
+    </script>
+  </body>
+</html>
